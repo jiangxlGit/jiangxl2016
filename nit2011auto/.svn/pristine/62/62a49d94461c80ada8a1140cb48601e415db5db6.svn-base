@@ -1,0 +1,141 @@
+package com.jiang.servlet;
+
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
+
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServlet;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
+import org.apache.commons.lang.StringUtils;
+
+import com.jiang.context.StaticValue;
+import com.jiang.util.CheckUtil;
+import com.jiang.util.MessageUtil;
+
+/**
+ * 
+ * @功能概要： 微信业务逻辑实现<br>
+ * @项目名称： 微信公众号开发<br>
+ * @初创作者： jiangxl <836200494@qq.com><br>
+ * @公司名称： ShenZhen Montnets Technology CO.,LTD.<br>
+ * @创建时间： 2016-10-22 下午12:22:39<br>
+ */
+public class WeixinServlet extends HttpServlet {
+
+	private static final long serialVersionUID = 5244765122759725352L;
+
+	@Override
+	protected void doGet(HttpServletRequest request,
+			HttpServletResponse response) throws ServletException, IOException {
+
+		request.setCharacterEncoding("UTF-8");
+		response.setContentType("text/html;charset=UTF-8");
+
+		/**
+		 * 第一步：填写服务器配置（在官网填写再提交） 
+		 * 第二步：验证消息的确来自微信服务器 2.1
+		 * 开发者提交信息后，微信服务器将发送GET请求
+		 * 到填写的服务器地址URL上，GET请求携带参数如下表所示：
+		 */
+		String signature = request.getParameter("signature");	// 微信加密签名，signature结合了开发者填写的token参数和请求中的timestamp参数、nonce参数。
+		String timestamp = request.getParameter("timestamp");	// 时间戳
+		String nonce = request.getParameter("nonce"); 			// 随机数
+		String echostr = request.getParameter("echostr"); 		// 随机字符串
+
+		PrintWriter out = response.getWriter();
+
+		if (CheckUtil.checkSignature(signature, timestamp, nonce)) {
+			out.print(echostr);
+		}
+		out.flush();
+		out.close();
+
+	}
+
+	@Override
+	protected void doPost(HttpServletRequest request,
+			HttpServletResponse response) throws ServletException, IOException {
+
+		request.setCharacterEncoding("UTF-8");
+		response.setContentType("text/html;charset=UTF-8");
+		// 输出流
+		PrintWriter out = null;
+		// 自动回复的消息
+		StringBuffer replyMsg = new StringBuffer();
+		// 返回的xml字符串
+		String returnXml = null;
+		// 将POST消息的XML格式的数据包转map格式
+		Map<String, String> map = new HashMap<String, String>();
+
+		try {
+
+			out = response.getWriter();
+			map = MessageUtil.xmlToMap(request);
+
+			String toUserName = map.get("ToUserName"); 		// 开发者微信号
+			String fromUserName = map.get("FromUserName"); 	// 发送方帐号（一个OpenID）
+			String msgType = map.get("MsgType"); 			// 消息类型
+			
+			//
+			if (StaticValue.REQ_MESSAGE_TYPE_TEXT.equals(msgType)) {
+				
+				String content = map.get("Content"); 		// 文本消息内容
+				
+				if (StringUtils.isNotBlank(content)) {
+					replyMsg.append("欢迎来到南昌工程学院2011级自动化微信公众号！");
+				}
+				// 把答复消息组装成xml格式
+				returnXml = MessageUtil.getReplyTextMessage(
+						String.valueOf(replyMsg), fromUserName, toUserName);
+
+			} else if (StaticValue.REQ_MESSAGE_TYPE_IMAGE.equals(msgType)) {
+				System.out.println("发送的是一张图片"+msgType);
+			} else if (StaticValue.REQ_MESSAGE_TYPE_LINK.equals(msgType)) {
+				System.out.println("发送的是一条链接"+msgType);
+			} else if (StaticValue.REQ_MESSAGE_TYPE_VOICE.equals(msgType)) {
+				System.out.println("发送的是一条音频"+msgType);
+			} else if (StaticValue.REQ_MESSAGE_TYPE_LOCATION.equals(msgType)) {
+				System.out.println("发送的是一个地理位置"+msgType);
+			} else if (StaticValue.REQ_MESSAGE_TYPE_VIDEO.equals(msgType)) {
+				System.out.println("发送的是一个视频"+msgType);
+			} else if (StaticValue.REQ_MESSAGE_TYPE_SHORTVIDEO.equals(msgType)) {
+				System.out.println("发送的是一个小视频"+msgType);
+			} 
+			
+			if (StaticValue.REQ_MESSAGE_TYPE_EVENT.equals(msgType)) {
+				String event = map.get("Event");
+				System.out.println(event);
+				SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:ss:mm");
+				String time = sdf.format(new Date());
+				System.out.println("发送的为事件类型的消息!");
+				if(StaticValue.EVENT_TYPE_CLICK.equals(event)){
+					System.out.println(time + "点击菜单拉取消息时的事件推送!");
+				} else if (StaticValue.EVENT_TYPE_SUBSCRIBE.equals(event)) {
+					System.out.println(time + "订阅!"+event);
+				} else if (StaticValue.EVENT_TYPE_UNSUBSCRIBE.equals(event)) {
+					System.out.println(time + "取消订阅!"+event);
+				} else if (StaticValue.EVENT_TYPE_VIEW.equals(event)) {
+					System.out.println(time + "视图!"+event);
+				} else if (StaticValue.EVENT_TYPE_SCAN.equals(event)) {
+					System.out.println(time + "扫描!"+event);
+				} else if (StaticValue.EVENT_TYPE_LOCATION.equals(event)) {
+					System.out.println(time + "地理位置!"+event);
+				} 
+			} 
+
+		} catch (Exception e) {
+			System.out.println("回复消息异常！");
+			e.printStackTrace();
+		}
+		out.print(returnXml);
+		out.flush();
+		out.close();
+	}
+
+}

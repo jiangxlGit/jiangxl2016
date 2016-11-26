@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project-module
+  type="WEB"
+  name="nit2011auto"
+  id="myeclipse.1477098158655"
+  context-root="/nit2011auto"
+  j2ee-spec="5.0"
+  archive="nit2011auto.war">
+  <attributes>
+    <attribute name="webrootdir" value="WebRoot" />
+  </attributes>
+</project-module>
+

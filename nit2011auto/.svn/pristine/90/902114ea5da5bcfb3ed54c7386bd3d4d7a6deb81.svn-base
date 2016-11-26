@@ -1,0 +1,66 @@
+package com.jiang.service;
+
+import java.util.List;
+
+import com.jiang.dao.WeixinDao;
+import com.jiang.pojo.Student;
+
+/**
+ * 
+ * @功能概要： 微信service层<br>
+ * @项目名称： 微信公众号开发<br>
+ * @初创作者： jiangxl <link 836200494@qq.com><br>
+ * @公司名称： ShenZhen Montnets Technology CO.,LTD.<br>
+ * @创建时间： 2016-10-25 上午11:53:31<br>
+ */
+public class WeixinService {
+
+	WeixinDao<Student> weixinDao = new WeixinDao<Student>();
+	
+	/**
+	 * 
+	 * 方法说明： 返回学生信息List集合<br>
+	 * 创建时间：2016-10-25 下午12:37:08 <br>
+	 * @return 
+	 *
+	 */
+	public List<Student> findById(String id){
+		
+		return weixinDao.findById(id);
+		
+	}
+	/**
+	 * 
+	 * 方法说明：更新数据 <br>
+	 * 创建时间：2016-10-26 上午10:40:11 <br>
+	 * @param id
+	 * @param updateStr
+	 * @param updateType
+	 * @return 
+	 *
+	 */
+	public Integer update(String id, String updateStr, int updateType){
+		
+		return weixinDao.update(id, updateStr, updateType);
+	
+	}
+	
+	public List<Student> findByPrimaryId( String id){
+		
+		return weixinDao.findByPrimaryId(id);
+		
+	}
+	
+	public List<Student> findByName( String name){
+		
+		return weixinDao.findByName(name);
+		
+	}
+	
+	public static void main(String[] args) {
+		WeixinService a = new WeixinService();
+		List<Student> student = a.findByName("江新林");
+		System.out.println(student.get(0).getName());
+	}
+	
+}

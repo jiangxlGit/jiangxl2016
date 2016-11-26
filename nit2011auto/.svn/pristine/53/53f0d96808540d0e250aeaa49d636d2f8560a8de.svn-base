@@ -1,0 +1,25 @@
+package com.jiang.test;
+
+import com.jiang.thread.RegularlyUpdateAccessTokenThread;
+
+public class CreateAccessTokenTest {
+	
+	public static void main(String[] args) {
+		
+		RegularlyUpdateAccessTokenThread t  = new RegularlyUpdateAccessTokenThread("A");
+		RegularlyUpdateAccessTokenThread t1 = new RegularlyUpdateAccessTokenThread("B");
+		RegularlyUpdateAccessTokenThread t2 = new RegularlyUpdateAccessTokenThread("C");
+		
+		Thread th = new Thread(t);
+		th.start();
+		Thread th1 = new Thread(t1);
+		th1.setPriority(Thread.MAX_PRIORITY);	//设置优先级
+		th1.start();
+		Thread th2 = new Thread(t2);
+		th2.start();
+		
+	}
+	
+}
+
+

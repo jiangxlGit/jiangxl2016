@@ -1,0 +1,218 @@
+package com.jiang.dao;
+
+import java.util.Date;
+import java.util.List;
+
+import org.hibernate.FlushMode;
+import org.hibernate.Session;
+
+import com.jiang.pojo.AccessTokenDB;
+import com.jiang.pojo.Student;
+import com.jiang.util.HibernateSessionFactory;
+
+/**
+ * 
+ * @功能概要： 微信公众号DAO层<br>
+ * @项目名称： MDOS<br>
+ * @初创作者： jiangxl <link 836200494@qq.com><br>
+ * @公司名称： ShenZhen Montnets Technology CO.,LTD.<br>
+ * @创建时间： 2016-10-25 下午12:36:42<br>
+ * @param <T>
+ */
+public class WeixinDao<T> implements DaoInterface<T>{
+
+	public void create(T object){
+		Session session = null;
+		try {
+			//1、开启一个Hibernate会话
+			session = HibernateSessionFactory.getSession();
+			//2、开启一个Hibernate事务
+			session.beginTransaction();
+			//3、写入数据到数据库中
+			session.persist(object);
+			//4、提交事务
+			session.getTransaction().commit();
+		} catch (Exception e) {
+			//5、若抛出异常则回滚
+			session.getTransaction().rollback();
+		} finally {
+			//6、最后关闭session
+			if( session != null){
+				session.close();
+			}
+		}	
+	}
+	
+	public Integer update(String id, String updateStr, int updateType) {
+		
+		String sql = "";
+		
+		Session session = HibernateSessionFactory.getSession();
+		session.setFlushMode(FlushMode.COMMIT);//提交时和flush()时清理缓存
+		
+		if(updateType == 1){
+			sql = "UPDATE tb_student s SET s.create_date = NOW(), s.telephone = '"+updateStr+"' WHERE s.id = '"+id+"'";
+		} else if (updateType == 2) {
+			sql = "UPDATE tb_student s SET s.create_date = NOW(), s.home_address = '"+updateStr+"' WHERE s.id = '"+id+"'";
+		} else if (updateType == 3){
+			sql = "UPDATE tb_student s SET s.create_date = NOW(), s.work_address = '"+updateStr+"' WHERE s.id = '"+id+"'";
+		}
+		try {
+			session.beginTransaction();
+			return session.createSQLQuery(sql).addEntity("tb_student", Student.class).executeUpdate();
+		} catch (Exception e) {
+			//若抛出异常则回滚
+			session.getTransaction().rollback();
+			return 0;
+		} finally {
+			session.getTransaction().commit();
+			if(session!=null){
+				session.close();
+			}
+		}
+		
+	}
+	
+	@SuppressWarnings("unchecked")
+	public List<Student> findByPrimaryId(String id){
+		Session session = HibernateSessionFactory.getSession();
+		session.setFlushMode(FlushMode.COMMIT);//提交时和flush()时清理缓存
+		String sql = " SELECT * FROM tb_student s WHERE s.id= '" + id + "' AND s.create_date IN( " +
+					 " SELECT MAX(stu.create_date) FROM tb_student stu WHERE stu.id= '" + id + "') ";
+		try {
+			session.beginTransaction();
+			return  session.createSQLQuery(sql).addEntity("tb_student", Student.class).list();
+		} finally {
+			session.getTransaction().commit();
+			if(session!=null){
+				session.close();
+			}
+		}
+	}
+	
+	@SuppressWarnings("unchecked")
+	public List<Student> findByName(String name){
+		Session session = HibernateSessionFactory.getSession();
+		session.setFlushMode(FlushMode.COMMIT);//提交时和flush()时清理缓存
+		String sql = " SELECT * FROM tb_student s WHERE s.name LIKE '%" + name + "%' AND s.create_date IN( " +
+					 " SELECT MAX(stu.create_date) FROM tb_student stu WHERE stu.name LIKE '%" + name + "%') ";
+		try {
+			session.beginTransaction();
+			return  session.createSQLQuery(sql).addEntity("tb_student", Student.class).list();
+		} finally {
+			session.getTransaction().commit();
+			if(session!=null){
+				session.close();
+			}
+		}
+	}
+	
+	@SuppressWarnings("unchecked")
+	public List<T> findById(String id){
+		Session session = HibernateSessionFactory.getSession();
+		session.setFlushMode(FlushMode.COMMIT);//提交时和flush()时清理缓存
+		String sql = " SELECT * FROM tb_student s WHERE s.student_id= '" + id + "' AND s.create_date IN( " +
+					 " SELECT MAX(stu.create_date) FROM tb_student stu WHERE stu.student_id= '" + id + "') ";
+		try {
+			session.beginTransaction();
+			return session.createSQLQuery(sql).addEntity("tb_student", Student.class).list();
+		} finally {
+			session.getTransaction().commit();
+			if(session!=null){
+				session.close();
+			}
+		}
+	}
+	
+	/**
+	 * 
+	 * 方法说明： 从数据库获取access_token<br>
+	 * 创建时间：2016-10-27 下午2:37:25 <br>
+	 * @return 
+	 *
+	 */
+	@SuppressWarnings("unchecked")
+	public static List<AccessTokenDB> getDBAccessToken(){
+		
+		Session session = HibernateSessionFactory.getSession();
+		session.setFlushMode(FlushMode.COMMIT);//提交时和flush()时清理缓存
+		String sql = " SELECT * FROM tb_access_token ";
+		try {
+			session.beginTransaction();
+			return session.createSQLQuery(sql).addEntity("tb_access_token", AccessTokenDB.class).list();
+		} finally {
+			session.getTransaction().commit();
+			if(session!=null){
+				session.close();
+			}
+		}
+	}
+	
+	/**
+	 * 
+	 * 方法说明： 更新数据库中的access_token和expires_in、存入时间create_date、提前量expires_custom<br>
+	 * 创建时间：2016-10-27 下午2:35:03 <br> 
+	 *
+	 */
+	public static Integer updateAccessTokenToDB(AccessTokenDB accessTokenDB){
+		
+		String access_token = accessTokenDB.getAccessToken();	 	 // 获取到的凭证
+		Integer expires_in = accessTokenDB.getExpiresIn(); 		 	 // 凭证有效时间，单位：秒
+		Integer expires_custom = accessTokenDB.getExpiresCustom();	 // 获取access_token的提前时间
+		Date create_date = accessTokenDB.getCreateDate();		 // 创建时间
+		
+		String sql = "";
+		
+		Session session = HibernateSessionFactory.getSession();
+		session.setFlushMode(FlushMode.COMMIT);//提交时和flush()时清理缓存
+		
+		sql = " UPDATE tb_access_token SET access_token = '"+access_token+"', expires_in = "+expires_in+", expires_custom = "+expires_custom+", create_date = "+create_date ;
+		
+		try {
+			session.beginTransaction();
+			return session.createSQLQuery(sql).addEntity("tb_access_token", AccessTokenDB.class).executeUpdate();
+		} catch (Exception e) {
+			//若抛出异常则回滚
+			session.getTransaction().rollback();
+			return 0;
+		} finally {
+			session.getTransaction().commit();
+			if(session!=null){
+				session.close();
+			}
+		}
+		
+	}
+	
+	public static void main(String[] args) {
+		List<AccessTokenDB> list = getDBAccessToken();
+		if(list!=null){
+			System.out.println(list.get(0).getAccessToken());
+		}
+	}
+	
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

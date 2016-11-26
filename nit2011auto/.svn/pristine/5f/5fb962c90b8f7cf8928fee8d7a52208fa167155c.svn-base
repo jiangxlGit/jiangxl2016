@@ -1,0 +1,82 @@
+package com.jiang.dao;
+
+import java.util.ArrayList;
+import java.util.List;
+
+import org.hibernate.FlushMode;
+import org.hibernate.Session;
+
+import com.jiang.pojo.Student;
+import com.jiang.util.HibernateSessionFactory;
+
+public class BaseDAO<T> {
+
+	public void create(T object){
+		
+		Session session = null;
+		try {
+			//1、开启一个Hibernate会话
+			session = HibernateSessionFactory.getSession();
+			//2、开启一个Hibernate事务
+			session.beginTransaction();
+			//3、写入数据到数据库中
+			session.persist(object);
+			//4、提交事务
+			session.getTransaction().commit();
+		} catch (Exception e) {
+			//5、若抛出异常则回滚
+			session.getTransaction().rollback();
+		} finally {
+			//6、最后关闭session
+			if( session != null){
+				session.close();
+			}
+		}	
+		
+	}
+	
+	/**
+	 * 
+	 * 方法说明：根据hql返回List <br>
+	 * 创建时间：2016-10-25 下午5:10:05 <br>
+	 * @param hql
+	 * @return 
+	 *
+	 */
+	@SuppressWarnings("unchecked")
+	public List<T> list(String hql) {
+		Session session = HibernateSessionFactory.getSessionFactory().getCurrentSession();
+		session.setFlushMode(FlushMode.COMMIT);
+		try {
+			session.beginTransaction();
+			return session.createQuery(hql).list();
+		} finally {
+			session.getTransaction().commit();
+			session.close();
+		}
+	}
+	
+	@SuppressWarnings("unchecked")
+	public T find(Class<? extends T> catClass, Integer id){
+		Session session = HibernateSessionFactory.getSessionFactory().getCurrentSession();
+		try {
+			session.beginTransaction();
+			return (T) session.get(catClass, id);
+		} finally {
+			session.getTransaction().commit();
+			if(session!=null){
+				session.close();
+			}
+		}
+	}
+	
+	public static void main(String[] args) {
+		List<Student> list = new ArrayList<Student>();
+		BaseDAO<Student> dao = new BaseDAO<Student>();
+		String hql = " FROM Student ";
+		list = (List<Student>) dao.list(hql);
+		Student student = list.get(0);
+		System.out.println(student.getName());
+	}
+	
+}

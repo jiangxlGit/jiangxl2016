@@ -1,0 +1,74 @@
+package com.jiang.test;
+
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
+
+import com.jiang.context.StaticValue;
+import com.jiang.dao.WeixinDao;
+import com.jiang.pojo.AccessToken;
+import com.jiang.pojo.AccessTokenDB;
+import com.jiang.util.AccessTokenUitl;
+
+public class CreateAccessTokenTest {
+	
+	public static void main(String[] args) {
+		
+		MyThread t = new MyThread();
+		Thread th = new Thread(t);
+		th.start();
+		Thread th1 = new Thread(t);
+		th1.start();
+		Thread th2 = new Thread(t);
+		th2.start();
+		
+	}
+	
+}
+
+class MyThread implements  Runnable {
+	public void run() {
+		Thread t = Thread.currentThread();
+		try {
+			while(true){
+				AccessToken accessToken = null;
+				
+				WeixinDao<AccessTokenDB> dao = new WeixinDao<AccessTokenDB>();
+				AccessTokenDB accessTokenDB = new AccessTokenDB();
+				List<AccessTokenDB> list = new ArrayList<AccessTokenDB>();
+				synchronized (list) {
+					list = dao.getDBAccessToken();
+					accessTokenDB = list.get(0);
+					if (accessTokenDB!=null && accessTokenDB.getAccessToken().length()>0) {
+						
+						long time = (new Date().getTime() - accessTokenDB.getCreateDate().getTime())/1000;
+						
+						int expires_in = accessTokenDB.getExpiresIn();
+						
+						if ( time >= (expires_in - StaticValue.GET_ACCESS_TOKEN_ADVANCE_S) ) {
+							accessToken = AccessTokenUitl.getServerAccessToken();
+							
+							System.out.println(t.getId()+":"+System.currentTimeMillis()/1000);
+						} 
+					} else {
+						accessToken = AccessTokenUitl.getServerAccessToken();
+					}
+					if(accessToken != null && accessToken.getAccess_token().length()>0){
+						accessTokenDB.setAccessToken(accessToken.getAccess_token());
+						accessTokenDB.setExpiresIn( Integer.valueOf(accessToken.getExpires_in()) );
+						accessTokenDB.setExpiresCustom(StaticValue.GET_ACCESS_TOKEN_ADVANCE_S);
+						accessTokenDB.setCreateDate(new Date());
+						dao.updateAccessTokenToDB(accessTokenDB);
+						Thread.sleep( (Long.valueOf(accessToken.getExpires_in()) - 
+								StaticValue.GET_ACCESS_TOKEN_ADVANCE_S-1)*1000L);
+					}
+				}
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		
+	}
+}
+
+

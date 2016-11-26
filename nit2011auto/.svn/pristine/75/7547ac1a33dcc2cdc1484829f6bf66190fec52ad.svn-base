@@ -1,0 +1,17 @@
+package test1;
+
+import org.apache.log4j.Logger;
+
+public class Log4jTest {
+
+	private static Logger logger = Logger.getLogger("这是一个测试Log4j的测试类Log4jTest");
+	
+	public static void main(String[] args) {
+		
+		logger.error("这是一个错误的记录！");
+		logger.info("这是一个常规的记录！");
+		logger.debug("这是一个调试的记录！");
+		
+	}
+	
+}

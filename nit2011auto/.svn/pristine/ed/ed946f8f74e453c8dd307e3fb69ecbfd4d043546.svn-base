@@ -1,0 +1,305 @@
+package com.jiang.servlet;
+
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.regex.Pattern;
+
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServlet;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
+import com.jiang.context.StaticValue;
+import com.jiang.pojo.Student;
+import com.jiang.service.WeixinService;
+import com.jiang.util.CheckUtil;
+import com.jiang.util.MessageUtil;
+
+/**
+ * 
+ * @功能概要： 微信业务逻辑实现<br>
+ * @项目名称： 微信公众号开发<br>
+ * @初创作者： jiangxl <836200494@qq.com><br>
+ * @公司名称： ShenZhen Montnets Technology CO.,LTD.<br>
+ * @创建时间： 2016-10-22 下午12:22:39<br>
+ */
+public class WeixinServlet extends HttpServlet {
+
+	private static final long serialVersionUID = 5244765122759725352L;
+
+	@Override
+	protected void doGet(HttpServletRequest request,
+			HttpServletResponse response) throws ServletException, IOException {
+
+		request.setCharacterEncoding("UTF-8");
+		response.setContentType("text/html;charset=UTF-8");
+
+		/**
+		 * 第一步：填写服务器配置（在官网填写再提交） 
+		 * 第二步：验证消息的确来自微信服务器 2.1
+		 * 开发者提交信息后，微信服务器将发送GET请求
+		 * 到填写的服务器地址URL上，GET请求携带参数如下表所示：
+		 */
+		String signature = request.getParameter("signature");	// 微信加密签名，signature结合了开发者填写的token参数和请求中的timestamp参数、nonce参数。
+		String timestamp = request.getParameter("timestamp");	// 时间戳
+		String nonce = request.getParameter("nonce"); 			// 随机数
+		String echostr = request.getParameter("echostr"); 		// 随机字符串
+
+		PrintWriter out = response.getWriter();
+
+		if (CheckUtil.checkSignature(signature, timestamp, nonce)) {
+			out.print(echostr);
+		}
+		out.flush();
+		out.close();
+
+	}
+
+	@Override
+	protected void doPost(HttpServletRequest request,
+			HttpServletResponse response) throws ServletException, IOException {
+
+		request.setCharacterEncoding("UTF-8");
+		response.setContentType("text/html;charset=UTF-8");
+		// 输出流
+		PrintWriter out = null;
+		// 自动回复的消息
+		StringBuffer replyMsg = new StringBuffer();
+		// 返回的xml字符串
+		String returnXml = null;
+		// 将POST消息的XML格式的数据包转map格式
+		Map<String, String> map = new HashMap<String, String>();
+		
+		WeixinService service = new WeixinService();
+		
+		try {
+
+			out = response.getWriter();
+			map = MessageUtil.xmlToMap(request);
+
+			String toUserName = map.get("ToUserName"); 		// 开发者微信号
+			String fromUserName = map.get("FromUserName"); 	// 发送方帐号（一个OpenID）
+			String msgType = map.get("MsgType"); 			// 消息类型
+			
+			if (StaticValue.REQ_MESSAGE_TYPE_TEXT.equals(msgType)) {
+				
+				String content = map.get("Content"); 		// 文本消息内容（含表情）
+				if ( "1".equals(content.trim()) ) {
+					replyMsg.append("亲！请输入你的学号+名字\n");
+					replyMsg.append("示例：2011100000+张三\n（加号不能少）");
+				} else if ( "2".equals(content.trim()) ){
+					replyMsg.append("查看班级毕业照片（功能有待完善）");
+					// TODO 2. 回复班级毕业照片功能
+				} else if ( "3".equals(content.trim()) ){
+					replyMsg.append("班级趣事（功能有待完善）");
+					// TODO 3. 回复班级毕业照片功能
+				}  else if ( Pattern.matches(StaticValue.REGEX_STUDENT_ID, content.replaceAll(" ", "")) ){
+					
+					String studentIdAndName = content.replaceAll(" ", "");
+					
+					String[] str = studentIdAndName.split("\\+"); 
+					String studentId = str[0].replaceAll(" ", "");
+					String name = str[1].replaceAll(" ", "");
+					
+					List<Student> list = new ArrayList<Student>();
+					list = service.findById(studentId);
+					
+					if( list != null && list.size() > 0 ){
+						
+						Student student = list.get(0);
+						String getName = student.getName();
+						String getStudentId = student.getStudentId();
+						String id = String.valueOf(student.getId());
+						
+						if( studentId.equals(getStudentId) && name.equals(getName) ){
+							String gender = student.getGender().replaceAll(" ", "");
+							if("男".equals(gender)){
+								replyMsg.append("你好！" + getName + "帅锅，你的ID为"+id+"\n——以下是你的基本信息——\n\n");
+							} else {
+								replyMsg.append("你好【" + getName + "】美女,你的ID为"+id+"\n——以下是你的基本信息——\n\n");
+							}
+							replyMsg.append("学号：" + getStudentId + "\n");
+							replyMsg.append("手机号码：" + student.getTelephone() + "\n");
+							replyMsg.append("家庭地址：" + student.getHomeAddress() + "\n");
+							replyMsg.append("工作地址：" + student.getWorkAddress() + "\n\n");
+							replyMsg.append("——更新请回复相应内容——\n\n");
+							replyMsg.append("“ID+SJHM+号码”：更新手机号码\n");
+							replyMsg.append("“ID+JTDZ+地址”：更新家庭地址\n");
+							replyMsg.append("“ID+GZDZ+地址”：更新工作地址\n");
+							replyMsg.append("提示：加号必须输入");
+						} else {
+							replyMsg.append("Sorry，你输入的学号与名字不匹配！");
+						}
+					} else {
+						replyMsg.append("抱歉，你输入的学号不存在！");
+					}
+					
+				} else if ( content.toUpperCase().indexOf("SJHM")!=-1 ){ //手机号码录入
+					
+					String[] str = content.split("\\+");
+					int result = 0;
+					if(str.length>2){
+						String id = str[0];
+						List<Student> student = service.findByPrimaryId(id);
+						if (student!=null&&student.size()>0) {
+							String telephone = str[2];
+							if(telephone.matches(StaticValue.REGEX_TELEPHONE)){
+								result = service.update(id, telephone, 1);
+							} else {
+								replyMsg.append("亲！号码格式不正确\n");
+							}
+						} else {
+							replyMsg.append("亲！ID输入错了\n");
+						}
+					} else {
+						replyMsg.append("输入信息不全！\n");
+					}
+					if (result >0) {
+						replyMsg.append("很好！ID"+str[0]+"的用户，你已经录入成功");
+					} else {
+						replyMsg.append("录入信息失败！");
+					}
+					
+				} else if ( content.toUpperCase().indexOf("JTDZ")!=-1 ){ //家庭地址录入
+					String[] str = content.split("\\+");
+					int result = 0;
+					if(str.length>2){
+						String id = str[0];
+						List<Student> student = service.findByPrimaryId(id);
+						if (student!=null&&student.size()>0) {
+							String homeAddress = str[2];
+							if(homeAddress!=null && !"".equals(homeAddress.replaceAll(" ", ""))){
+								result = service.update(id, homeAddress, 2);
+							} else {
+								replyMsg.append("亲！家庭地址不能空\n");
+							}
+						} else {
+							replyMsg.append("亲！ID输入错了\n");
+						}
+					} else {
+						replyMsg.append("输入信息不全！\n");
+					}
+					if (result >0) {
+						replyMsg.append("很好！ID"+str[0]+"的用户，家庭地址录入成功");
+					} else {
+						replyMsg.append("家庭地址录入信息失败！");
+					}
+				} else if ( content.toUpperCase().indexOf("GZDZ")!=-1 ){ //工作地址录入
+					String[] str = content.split("\\+");
+					int result = 0;
+					if(str.length>2){
+						String id = str[0];
+						List<Student> student = service.findByPrimaryId(id);
+						if (student!=null&&student.size()>0) {
+							String workAddress = str[2];
+							if(workAddress!=null && !"".equals(workAddress.replaceAll(" ", ""))){
+								result = service.update(id, workAddress, 3);
+							} else {
+								replyMsg.append("亲！工作地址不能空\n");
+							}
+						} else {
+							replyMsg.append("亲！ID输入错了\n");
+						}
+					} else {
+						replyMsg.append("输入信息不全！\n");
+					}
+					if (result >0) {
+						replyMsg.append("很好！ID"+str[0]+"的用户，工作地址录入成功");
+					} else {
+						replyMsg.append("工作地址录入信息失败！");
+					}
+				}  else if ( content.toUpperCase().indexOf("TX")!=-1 ){ //同学信息查看
+					String[] str = content.split("\\+");
+					if(str.length>1){
+						String classmateName = str[1].replaceAll(" ", "");
+						List<Student> student = service.findByName(classmateName);
+						if (student!=null&&student.size()>0) {
+							String getName = student.get(0).getName();
+							String gender = student.get(0).getGender().replaceAll(" ", "");
+							replyMsg.append("你好！你同学"+getName+"的信息如下：\n");
+							replyMsg.append("性别："+gender + "\n");
+							replyMsg.append("手机号码：" + student.get(0).getTelephone() + "\n");
+							replyMsg.append("家庭地址：" + student.get(0).getHomeAddress() + "\n");
+							replyMsg.append("工作地址：" + student.get(0).getWorkAddress());
+						} else {
+							replyMsg.append("亲！查无此名");
+						}
+					} else {
+						replyMsg.append("输入信息不全！");
+					}
+				} else {
+					System.out.println("发送的是一条文本");
+					replyMsg.append("      欢迎来到南昌工程学院2011级自动化微信公众号！\n");
+					replyMsg.append("————请回复相应数字————\t\n");
+					replyMsg.append("*回复“1”：录入个人信息\n");
+					replyMsg.append("*回复“2”：查看班级毕业照片\n");
+					replyMsg.append("*回复“3”：班级趣事\n");
+					replyMsg.append("*回复“TX+同学名字”：查看同学信息\n");
+					replyMsg.append("          ————制作人：江新林");
+				}
+				
+				// 把答复消息组装成xml格式
+				returnXml = MessageUtil.getReplyTextMessage(
+						String.valueOf(replyMsg), fromUserName, toUserName);
+
+			} else if (StaticValue.REQ_MESSAGE_TYPE_IMAGE.equals(msgType)) {
+				System.out.println("发送的是一张图片"+msgType);
+			} else if (StaticValue.REQ_MESSAGE_TYPE_LINK.equals(msgType)) {
+				System.out.println("发送的是一条链接"+msgType);
+			} else if (StaticValue.REQ_MESSAGE_TYPE_VOICE.equals(msgType)) {
+				System.out.println("发送的是一条音频"+msgType);
+			} else if (StaticValue.REQ_MESSAGE_TYPE_LOCATION.equals(msgType)) {
+				System.out.println("发送的是一个地理位置"+msgType);
+			} else if (StaticValue.REQ_MESSAGE_TYPE_VIDEO.equals(msgType)) {
+				System.out.println("发送的是一个视频"+msgType);
+			} else if (StaticValue.REQ_MESSAGE_TYPE_SHORTVIDEO.equals(msgType)) {
+				System.out.println("发送的是一个小视频"+msgType);
+			} 
+			
+			if (StaticValue.REQ_MESSAGE_TYPE_EVENT.equals(msgType)) {
+				String event = map.get("Event");
+				System.out.println(event);
+				SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:ss:mm");
+				String time = sdf.format(new Date());
+				System.out.println("发送的为事件类型的消息!");
+				if(StaticValue.EVENT_TYPE_CLICK.equals(event)){
+					System.out.println(time + "点击菜单拉取消息时的事件推送!");
+				} else if (StaticValue.EVENT_TYPE_SUBSCRIBE.equals(event)) {
+					System.out.println(time + "订阅!"+event);
+					replyMsg.append("      欢迎来到南昌工程学院2011级自动化微信公众号！\n");
+					replyMsg.append("————请回复相应数字————\t\n");
+					replyMsg.append("*回复“1”：录入个人信息\n");
+					replyMsg.append("*回复“2”：查看班级毕业照片\n");
+					replyMsg.append("*回复“3”：班级趣事\n");
+					replyMsg.append("*回复“TX+同学名字”：查看同学信息\n");
+					replyMsg.append("          ————制作人：江新林");
+					// 把答复消息组装成xml格式
+					returnXml = MessageUtil.getReplyTextMessage(
+							String.valueOf(replyMsg), fromUserName, toUserName);
+				} else if (StaticValue.EVENT_TYPE_UNSUBSCRIBE.equals(event)) {
+					System.out.println(time + "取消订阅!"+event);
+				} else if (StaticValue.EVENT_TYPE_VIEW.equals(event)) {
+					System.out.println(time + "视图!"+event);
+				} else if (StaticValue.EVENT_TYPE_SCAN.equals(event)) {
+					System.out.println(time + "扫描!"+event);
+				} else if (StaticValue.EVENT_TYPE_LOCATION.equals(event)) {
+					System.out.println(time + "地理位置!"+event);
+				} 
+			} 
+
+		} catch (Exception e) {
+			System.out.println("回复消息异常！");
+			e.printStackTrace();
+		}
+		out.print(returnXml);
+		out.flush();
+		out.close();
+	}
+
+}

@@ -1,0 +1,148 @@
+package com.jiang.dao;
+
+import java.util.List;
+
+import org.hibernate.FlushMode;
+import org.hibernate.Session;
+
+import com.jiang.pojo.Student;
+import com.jiang.util.HibernateSessionFactory;
+
+/**
+ * 
+ * @功能概要： 微信公众号DAO层实现<br>
+ * @项目名称： 微信公众号开发<br>
+ * @初创作者： jiangxl <836200494@qq.com><br>
+ * @公司名称： ShenZhen Montnets Technology CO.,LTD.<br>
+ * @创建时间： 2016-11-6 下午10:12:19<br>
+ */
+public class WeixinDao implements IWeixinDao<Student> {
+
+	public void create(Student object){
+		Session session = null;
+		try {
+			//1、开启一个Hibernate会话
+			session = HibernateSessionFactory.getSession();
+			//2、开启一个Hibernate事务
+			session.beginTransaction();
+			//3、写入数据到数据库中
+			session.persist(object);
+			//4、提交事务
+			session.getTransaction().commit();
+		} catch (Exception e) {
+			//5、若抛出异常则回滚
+			session.getTransaction().rollback();
+		} finally {
+			//6、最后关闭session
+			if( session != null){
+				session.close();
+			}
+		}	
+	}
+	
+	public Integer update(String id, String updateStr, int updateType) {
+		
+		String sql = "";
+		
+		Session session = HibernateSessionFactory.getSession();
+		session.setFlushMode(FlushMode.COMMIT);//提交时和flush()时清理缓存
+		
+		if(updateType == 1){
+			sql = "UPDATE tb_student s SET s.create_date = NOW(), s.telephone = '"+updateStr+"' WHERE s.id = '"+id+"'";
+		} else if (updateType == 2) {
+			sql = "UPDATE tb_student s SET s.create_date = NOW(), s.home_address = '"+updateStr+"' WHERE s.id = '"+id+"'";
+		} else if (updateType == 3){
+			sql = "UPDATE tb_student s SET s.create_date = NOW(), s.work_address = '"+updateStr+"' WHERE s.id = '"+id+"'";
+		}
+		try {
+			session.beginTransaction();
+			return session.createSQLQuery(sql).addEntity("tb_student", Student.class).executeUpdate();
+		} catch (Exception e) {
+			//若抛出异常则回滚
+			session.getTransaction().rollback();
+			return 0;
+		} finally {
+			session.getTransaction().commit();
+			if(session!=null){
+				session.close();
+			}
+		}
+		
+	}
+	
+	@SuppressWarnings("unchecked")
+	public List<Student> findByPrimaryId(String id){
+		Session session = HibernateSessionFactory.getSession();
+		session.setFlushMode(FlushMode.COMMIT);//提交时和flush()时清理缓存
+		String sql = " SELECT * FROM tb_student s WHERE s.id= '" + id + "' AND s.create_date IN( " +
+					 " SELECT MAX(stu.create_date) FROM tb_student stu WHERE stu.id= '" + id + "') ";
+		try {
+			session.beginTransaction();
+			return  session.createSQLQuery(sql).addEntity("tb_student", Student.class).list();
+		} finally {
+			session.getTransaction().commit();
+			if(session!=null){
+				session.close();
+			}
+		}
+	}
+	
+	@SuppressWarnings("unchecked")
+	public List<Student> findByName(String name){
+		Session session = HibernateSessionFactory.getSession();
+		session.setFlushMode(FlushMode.COMMIT);//提交时和flush()时清理缓存
+		String sql = " SELECT * FROM tb_student s WHERE s.name LIKE '%" + name + "%' AND s.create_date IN( " +
+					 " SELECT MAX(stu.create_date) FROM tb_student stu WHERE stu.name LIKE '%" + name + "%') ";
+		try {
+			session.beginTransaction();
+			return  session.createSQLQuery(sql).addEntity("tb_student", Student.class).list();
+		} finally {
+			session.getTransaction().commit();
+			if(session!=null){
+				session.close();
+			}
+		}
+	}
+	
+	@SuppressWarnings("unchecked")
+	public List<Student> findByStudentId(String id){
+		Session session = HibernateSessionFactory.getSession();
+		session.setFlushMode(FlushMode.COMMIT);//提交时和flush()时清理缓存
+		String sql = " SELECT * FROM tb_student s WHERE s.student_id= '" + id + "' AND s.create_date IN( " +
+					 " SELECT MAX(stu.create_date) FROM tb_student stu WHERE stu.student_id= '" + id + "') ";
+		try {
+			session.beginTransaction();
+			return session.createSQLQuery(sql).addEntity("tb_student", Student.class).list();
+		} finally {
+			session.getTransaction().commit();
+			if(session!=null){
+				session.close();
+			}
+		}
+	}
+	
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

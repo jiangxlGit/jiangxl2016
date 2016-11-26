@@ -1,0 +1,46 @@
+-----------------------------------------
+0、配置根Logger：
+log4j.rootLogger = [ level ] , appenderName1, appenderName2, …
+log4j.additivity.org.apache=false：表示Logger不会在父Logger的appender里输出，默认为true。
+level ：设定日志记录的最低级别，可设的值有OFF、FATAL、ERROR、WARN、INFO、DEBUG、ALL或者自定义的级别，Log4j建议只使用中间四个级别。
+通过在这里设定级别，您可以控制应用程序中相应级别的日志信息的开关，比如在这里设定了INFO级别，则应用程序中所有DEBUG级别的日志信息将不会被打印出来。
+appenderName：就是指定日志信息要输出到哪里。可以同时指定多个输出目的地，用逗号隔开。
+例如：log4j.rootLogger＝INFO,A1,B2,C3
+
+-----------------------------------------
+Log4j有三个主要的组件：Loggers(记录器)，Appenders (输出源)和Layouts(布局)。
+
+-----------------------------------------
+1、Loggers
+Loggers组件在此系统中被分为五个级别：DEBUG、INFO、WARN、ERROR和FATAL。这五个级别是有顺序的，DEBUG < INFO < WARN < ERROR < FATAL。
+
+-----------------------------------------
+2、Appenders
+允许把日志输出到不同的地方，如控制台（Console）、文件（Files）等，可以根据天数或者文件大小产生新的文件，可以以流的形式发送到其它地方等等。
+常使用的类如下：
+org.apache.log4j.ConsoleAppender（控制台）
+org.apache.log4j.FileAppender（文件）
+org.apache.log4j.DailyRollingFileAppender（每天产生一个日志文件）
+org.apache.log4j.RollingFileAppender（文件大小到达指定尺寸的时候产生一个新的文件）
+org.apache.log4j.WriterAppender（将日志信息以流格式发送到任意指定的地方）
+配置模式：
+log4j.appender.appenderName = className
+log4j.appender.appenderName.Option1 = value1
+…
+log4j.appender.appenderName.OptionN = valueN
+
+-----------------------------------------
+3、Layouts
+Layouts提供四种日志输出样式，如根据HTML样式、自由指定样式、包含日志级别与信息的样式和包含日志时间、线程、类别等信息的样式。
+常使用的类如下：
+org.apache.log4j.HTMLLayout（以HTML表格形式布局）
+org.apache.log4j.PatternLayout（可以灵活地指定布局模式）
+org.apache.log4j.SimpleLayout（包含日志信息的级别和信息字符串）
+org.apache.log4j.TTCCLayout（包含日志产生的时间、线程、类别等信息）
+配置模式：
+log4j.appender.appenderName.layout =className
+log4j.appender.appenderName.layout.Option1 = value1
+…
+log4j.appender.appenderName.layout.OptionN = valueN
+
+-----------------------------------------

@@ -1,0 +1,35 @@
+package com.jiang.dao;
+
+import java.util.List;
+
+public interface DaoInterface<T> {
+
+	/**
+	 * 把对象写数据库
+	 * @param object
+	 */
+	public void create(T object);
+	
+	/**
+	 * 根据hql返回List 
+	 * @param hql
+	 * @return
+	 */
+	public List<T> list(String hql);
+	
+	/**
+	 * 根据class和id返回List 
+	 * @param catClass
+	 * @param id
+	 * @return
+	 */
+	public T findByClassAndId(Class<? extends T> catClass, Integer id);
+	
+	/**
+	 * 根据studentId返回List 
+	 * @param studentId
+	 * @return
+	 */
+	public List<T> findById(String id);
+	
+}

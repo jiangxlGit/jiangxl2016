@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project-modules id="moduleCoreId" project-version="1.5.0">
+    <wb-module deploy-name="nit2011auto">
+        <wb-resource deploy-path="/" source-path="/WebRoot"/>
+        <wb-resource deploy-path="/WEB-INF/classes" source-path="/src"/>
+        <wb-resource deploy-path="/WEB-INF/classes" source-path="/config"/>
+        <property name="context-root" value="/nit2011auto"/>
+        <property name="java-output-path" value="/nit2011auto/WebRoot/WEB-INF/classes"/>
+    </wb-module>
+</project-modules>

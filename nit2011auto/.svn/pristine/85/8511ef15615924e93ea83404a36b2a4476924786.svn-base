@@ -1,0 +1,52 @@
+package com.jiang.test;
+
+import java.util.Date;
+
+import org.hibernate.FlushMode;
+import org.hibernate.Session;
+import org.hibernate.Transaction;
+
+import com.jiang.pojo.AccessTokenDB;
+import com.jiang.util.HibernateSessionFactory;
+
+public class CreateAccessTokenTest {
+
+public static void main(String[] args) {
+		
+		AccessTokenDB accessTokenDB = new AccessTokenDB();
+		
+		accessTokenDB.setAccessToken("test");
+		accessTokenDB.setExpiresIn(7200);
+		accessTokenDB.setExpiresCustom(60);
+		accessTokenDB.setCreateDate(new Date());
+		
+		Session session = null;
+		Transaction trans = null;
+		
+		try {
+			
+			//开启一个hibernate对话
+			session = HibernateSessionFactory.getSession();
+			session.setFlushMode(FlushMode.COMMIT);//提交时和flush()时清理缓存
+			//开启一个hibernate事务
+			trans = session.beginTransaction();
+			
+			//写入数据库
+			session.persist(accessTokenDB);
+			
+			trans.commit();
+			
+		} catch (Exception e) {
+			
+			e.printStackTrace();
+			trans.rollback();
+			
+		} finally {
+			if(session != null){
+				session.close();
+			}
+		}
+		
+	}
+	
+}

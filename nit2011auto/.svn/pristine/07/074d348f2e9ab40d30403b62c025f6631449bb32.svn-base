@@ -1,0 +1,264 @@
+package com.jiang.util;
+
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.Writer;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import javax.servlet.http.HttpServletRequest;
+import javax.xml.bind.JAXBException;
+
+import org.dom4j.Document;
+import org.dom4j.DocumentException;
+import org.dom4j.Element;
+import org.dom4j.io.SAXReader;
+
+import com.jiang.context.StaticValue;
+import com.jiang.pojo.message.TextInputMassage;
+import com.jiang.pojo.message.TextOutputMassage;
+import com.jiang.util.aes.AesException;
+import com.jiang.util.aes.WXBizMsgCrypt;
+import com.thoughtworks.xstream.XStream;
+import com.thoughtworks.xstream.core.util.QuickWriter;
+import com.thoughtworks.xstream.io.HierarchicalStreamWriter;
+import com.thoughtworks.xstream.io.xml.DomDriver;
+import com.thoughtworks.xstream.io.xml.PrettyPrintWriter;
+import com.thoughtworks.xstream.io.xml.XppDriver;
+
+/**
+ * 
+ * @功能概要： 微信用户向公众账号发消息的工具类
+ * @项目名称： 微信公众号开发
+ * @初创作者： jiangxl <836200494@qq.com>
+ * @公司名称： ShenZhen Montnets Technology CO.,LTD.
+ * @创建时间： 2016-10-22 上午11:27:34
+ */
+public class MessageUtil {
+	//单例模式（懒汉式）
+	private volatile static MessageUtil messageUtil = null;
+	
+	private MessageUtil(){}
+	
+	public static MessageUtil getInstance(){
+		if(messageUtil==null){
+			synchronized (MessageUtil.class) {
+				if (messageUtil==null) {
+					messageUtil = new MessageUtil();
+				}
+			}
+		}
+		return messageUtil;
+	}
+	
+	/**
+	 * 将POST消息的XML格式的数据包转map格式
+	 * @param request
+	 * @return Map<String, String>
+	 * @throws IOException 
+	 * @throws DocumentException 
+	 */
+	public static Map<String, String> xmlToMap(HttpServletRequest request) 
+			throws IOException, DocumentException{
+		
+		Map<String, String> map = new HashMap<String, String>();
+		SAXReader reader = new SAXReader();
+		
+		//从request中获取输入流
+		InputStream ins = request.getInputStream();
+		
+		Document doc = reader.read(ins);
+		Element root = doc.getRootElement();
+		
+		@SuppressWarnings("unchecked")
+		List<Element> list = root.elements();
+		for(Element e : list){
+			map.put(e.getName(), e.getText());
+		}
+		
+		if (ins != null) {
+			ins.close();
+		}
+		return map;
+	}
+	
+	/**
+	 * 将request请求转成xml格式的字符串
+	 * @param request
+	 * @return
+	 */
+	public static String requestToXml(HttpServletRequest request){
+		
+		String returnXml = "";
+		BufferedReader reader = null;
+		InputStream inputStream = null;
+		
+		try {
+			// 从request中取得输入流    
+			inputStream = request.getInputStream();    
+			//加UTF-8解决消息中的中文乱码问题  
+			reader=new BufferedReader(new InputStreamReader(inputStream,"UTF-8")); 
+			String line = null;  
+			StringBuffer buf=new StringBuffer();  
+			while( (line=reader.readLine()) != null ){  
+				buf.append(line);  
+			} 
+	        returnXml = buf.toString();
+			
+		} catch (IOException e) {
+			e.printStackTrace();
+		} finally {
+			if (reader != null) {
+				try {
+					reader.close();
+				} catch (IOException e) {
+					e.printStackTrace();
+				}  
+			}
+			if (inputStream != null) {
+				try {
+					inputStream.close();
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
+			}
+		}
+		return returnXml;
+	}
+	
+	/**
+	 * 将文本消息对象转换成xml
+	 * @param request
+	 * @return String
+	 * @throws JAXBException 
+	 */
+	public static String textMassageToXml(TextInputMassage textMassage){
+		/*
+		 * CDATA标记用户处理XML中出现<&的字符串。
+		 * <![CDATA[balabala]]>，在消息传输过程中，为什么要加上这一段字符串？
+		 * 首先，先来了解一下什么是CDATA?
+		 * 术语 CDATA 指的是不应由 XML 解析器进行解析的文本数据。
+		 * 在 XML 元素中，"<" 和 "&" 是非法的。
+		 * "<" 会产生错误，因为解析器会把该字符解释为新元素的开始。
+		 * "&" 也会产生错误，因为解析器会把该字符解释为字符实体的开始。
+		 * CDATA 部分中的所有内容都会被解析器忽略。
+		 * 比如说：我要回复一条a < b的内容，此时，如果不加上CDATA标记，
+		 * 那么此时的<会被解析成新元素的开始，此时就会报错。
+		 * 自定义解析器，为xml文本添加CDATA标记
+		 */
+		XStream xstream = new XStream(new XppDriver() {
+		    public HierarchicalStreamWriter createWriter(Writer out) {
+		        return new PrettyPrintWriter(out) {
+		            //对所有XML节点都增加CDATA标记
+		            boolean cdata = true;
+		 
+		            @SuppressWarnings("rawtypes")
+					public void startNode(String name, Class clazz) {
+		                super.startNode(name, clazz);
+		            }
+		 
+		            protected void writeText(QuickWriter writer, String text) {
+		                if(cdata) {
+		                    writer.write("<![CDATA[");
+		                    writer.write(text);
+		                    writer.write("]]>");
+		                }
+		                else {
+		                    writer.write(text);
+		                }
+		            }
+		        };
+		    }
+		});
+		xstream.alias("xml", textMassage.getClass());  
+	    return xstream.toXML(textMassage);
+	}
+	
+	/**
+	 * 将xml转对象
+	 * @param xmlString
+	 * @param class1
+	 * @return Object
+	 * @throws IOException
+	 */
+	@SuppressWarnings("rawtypes")
+	public static Object xmlMassageToObject(String xmlString,Class class1) 
+			throws IOException{
+		
+		XStream xstream = new XStream(new DomDriver());
+		xstream.alias("xml", class1);
+		return xstream.fromXML(xmlString);
+	}
+	
+	/**
+	 * 回复文本消息
+	 * 根据传入的组装成TextOutputMassage对象，再转成xml格式
+	 * @param content
+	 * @param fromUserName
+	 * @param toUserName
+	 * @return String
+	 */
+    public static String getReplyTextMessage(String content, 
+    		String fromUserName,String toUserName){
+        
+		TextOutputMassage outputMassage = new TextOutputMassage();
+		outputMassage.setToUserName(fromUserName);
+		outputMassage.setFromUserName(toUserName);
+		outputMassage.setCreateTime(new Long(new Date().getTime()));
+		outputMassage.setMsgType(StaticValue.RESP_MESSAGE_TYPE_TEXT);
+		outputMassage.setContent(content);
+		outputMassage.setFuncFlag("0");
+		 
+		XStream xstream = new XStream(new DomDriver()); 
+		xstream.alias("xml", TextOutputMassage.class);
+		return xstream.toXML(outputMassage);
+		 
+    }
+	
+    /**
+	 * 
+	 * 方法说明：消息的加解密 <br>
+	 * 创建时间：2016-11-3 下午1:18:26 <br>
+	 * @return
+	 * @throws AesException 
+	 *
+	 */
+	public static WXBizMsgCrypt getWXBizMsgCrypt() throws AesException{
+		WXBizMsgCrypt wxBizMsgCrypt = null;
+		wxBizMsgCrypt = new WXBizMsgCrypt(StaticValue.TOKEN, 
+				StaticValue.EncodingAESKey, StaticValue.APPID);
+		return wxBizMsgCrypt;
+	}
+    
+	/**
+	 * 解密发来的被加密的消息，转化成xml格式的明文
+	 * @param request
+	 * @return
+	 */
+	public static String decryptMsgToXml(HttpServletRequest request){
+		
+		String decryptXml = "";
+		String postdata = "";
+		
+		try {
+			String msg_signature = request.getParameter("msg_signature");
+			String timestamp = request.getParameter("timestamp");	// 时间戳
+			String nonce = request.getParameter("nonce"); 			// 随机数
+	        postdata = requestToXml(request);
+			//解密
+			WXBizMsgCrypt wxBizMsgCrypt = MessageUtil.getWXBizMsgCrypt();
+			decryptXml = wxBizMsgCrypt.decryptMsg(msg_signature, timestamp, nonce, postdata);
+			
+		} catch (AesException e) {
+			e.printStackTrace();
+		} 
+		
+		return decryptXml;
+		
+	}
+	
+}

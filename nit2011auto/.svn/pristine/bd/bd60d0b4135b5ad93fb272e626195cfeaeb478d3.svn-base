@@ -1,0 +1,114 @@
+package com.jiang.servlet;
+
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
+
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServlet;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
+import com.jiang.service.WeixinService;
+import com.jiang.thread.RegularlyUpdateAccessTokenThread;
+import com.jiang.util.CheckUtil;
+import com.jiang.util.MessageUtil;
+
+/**
+ * 
+ * @功能概要： 微信业务逻辑实现<br>
+ * @项目名称： 微信公众号开发<br>
+ * @初创作者： jiangxl <836200494@qq.com><br>
+ * @公司名称： ShenZhen Montnets Technology CO.,LTD.<br>
+ * @创建时间： 2016-10-22 下午12:22:39<br>
+ */
+public class WeixinServlet extends HttpServlet {
+
+	private static final long serialVersionUID = 5244765122759725352L;
+	
+	private static ExecutorService fixedThreadPool  = Executors.newFixedThreadPool(1);
+	private static RegularlyUpdateAccessTokenThread t  = 
+			new RegularlyUpdateAccessTokenThread("定时更新AccessToken的线程");
+	
+	@Override
+	protected void doGet(HttpServletRequest request,
+			HttpServletResponse response) throws ServletException, IOException {
+
+		request.setCharacterEncoding("UTF-8");
+		response.setContentType("text/html;charset=UTF-8");
+
+		/**
+		 * 第一步：填写服务器配置（在官网填写再提交） 
+		 * 第二步：验证消息的确来自微信服务器 2.1
+		 * 开发者提交信息后，微信服务器将发送GET请求
+		 * 到填写的服务器地址URL上，GET请求携带参数如下表所示：
+		 */
+		String signature = request.getParameter("signature");	// 微信加密签名，signature结合了开发者填写的token参数和请求中的timestamp参数、nonce参数。
+		String timestamp = request.getParameter("timestamp");	// 时间戳
+		String nonce = request.getParameter("nonce"); 			// 随机数
+		String echostr = request.getParameter("echostr"); 		// 随机字符串
+
+		PrintWriter out = response.getWriter();
+
+		if (CheckUtil.checkSignature(signature, timestamp, nonce)) {
+			out.print(echostr);
+		}
+		out.flush();
+		out.close();
+
+	}
+
+	@Override
+	protected void doPost(HttpServletRequest request,
+			HttpServletResponse response) throws ServletException, IOException {
+		request.setCharacterEncoding("UTF-8");
+		response.setContentType("text/html;charset=UTF-8");
+		// 输出流
+		PrintWriter out = null;
+		// 返回的xml字符串
+		String returnXml = null;
+		// 将POST消息的XML格式的数据包转map格式
+		Map<String, String> map = new HashMap<String, String>();
+		
+		try {
+			
+			out = response.getWriter();
+			//先回复一个success，防止超过5秒出现“该公众号暂时无法提供服务，请稍后再试”的消息！
+			out.println("success");
+			
+			Thread thread = new Thread(t);
+			fixedThreadPool.execute(thread);
+			System.out.println("线程:"+thread.getId());
+			
+			map = MessageUtil.xmlToMap(request);
+
+			returnXml = WeixinService.replyMessage(map);
+			
+		} catch (Exception e) {
+			System.out.println("回复消息异常！");
+			e.printStackTrace();
+		} 
+		
+		out.print(returnXml);
+		out.flush();
+		out.close();
+	}
+
+	@Override
+	public void destroy(){
+		try {
+			fixedThreadPool.shutdown();
+			while (!fixedThreadPool.awaitTermination(1, TimeUnit.SECONDS)) {  
+			    System.out.println("线程池没有关闭");  
+			}
+			System.out.println("线程池已经关闭");
+		} catch (InterruptedException e) {
+			e.printStackTrace();
+		}
+    }
+	
+}

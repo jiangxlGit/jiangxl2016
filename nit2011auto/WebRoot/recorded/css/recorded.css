@@ -1,0 +1,74 @@
+@CHARSET "UTF-8";
+
+* {
+	margin: 0;
+	padding: 0;
+	font-family: "微软雅黑";
+}
+
+body {
+	background: #F7F7F7;
+}
+
+.form {
+	position: absolute;
+	top: 0;
+	left: 0;
+	height: 1920px;
+	width: 1080px;
+	font-size: 35px;
+	-webkit-box-shadow: 0px 0px 10px #A6A6A6;
+	background: #fff;
+}
+
+#recorded {
+	float: left;
+	text-align: center;
+	width: 1080px;
+	padding: 25px 0;
+	color: #000000;
+	background-color: yellowgreen;
+}
+
+.inp {
+	height: 120px;
+	margin: 0 auto;
+	margin-bottom: 30px;
+	width: 900px;
+}
+
+.inp>input {
+	text-align: center;
+	height: 90px;
+	width: 900px;
+	margin: 0 auto;
+	transition: all 0.3s ease-in-out;
+	font-size: 35px;
+	border-radius: 20px;
+	border: 3px solid;
+}
+
+.toRecorded {
+	border: 2px solid #33CCFF;
+	color: #000;
+	background-color: #33ccff;
+	height: 70px;
+	width: 400px;
+	text-align: center;
+	font-size: 35px;
+	margin-left: 340px;
+	line-height: 70px;
+	margin-top: 30px;
+	transition: all 0.3s ease-in-out;
+	border-radius: 35px;
+}
+
+.toRecorded:hover {
+	background: #A6A6A6;
+	color: #fff;
+}
+
+.fix {
+	height:100px;
+	clear: both;
+}

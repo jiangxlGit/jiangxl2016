@@ -1,0 +1,92 @@
+package com.jiang.context;
+
+public class StaticValue {
+
+	/**
+	 * Token的值会保存到微信后台,只有微信后台和公众账号服务器知道这个字符串
+	 */
+	public static final String TOKEN = "jiang";
+	
+	/** 
+     * 返回消息类型：文本 
+     */  
+    public static final String RESP_MESSAGE_TYPE_TEXT = "text";  
+
+    /** 
+     * 返回消息类型：音乐 
+     */  
+    public static final String RESP_MESSAGE_TYPE_MUSIC = "music";  
+
+    /** 
+     * 返回消息类型：图文 
+     */  
+    public static final String RESP_MESSAGE_TYPE_NEWS = "news";  
+
+    /** 
+     * 请求消息类型：文本 
+     */  
+    public static final String REQ_MESSAGE_TYPE_TEXT = "text";  
+
+    /** 
+     * 请求消息类型：图片 
+     */  
+    public static final String REQ_MESSAGE_TYPE_IMAGE = "image";  
+
+    /** 
+     * 请求消息类型：链接 
+     */  
+    public static final String REQ_MESSAGE_TYPE_LINK = "link";  
+
+    /** 
+     * 请求消息类型：地理位置 
+     */  
+    public static final String REQ_MESSAGE_TYPE_LOCATION = "location";  
+
+    /** 
+     * 请求消息类型：音频 
+     */  
+    public static final String REQ_MESSAGE_TYPE_VOICE = "voice";  
+
+    /** 
+     * 请求消息类型：推送 
+     */  
+    public static final String REQ_MESSAGE_TYPE_EVENT = "event";  
+
+    /** 
+     * 事件类型：subscribe(订阅) 
+     */  
+    public static final String EVENT_TYPE_SUBSCRIBE = "subscribe";  
+
+    /** 
+     * 事件类型：unsubscribe(取消订阅) 
+     */  
+    public static final String EVENT_TYPE_UNSUBSCRIBE = "unsubscribe";  
+
+    /** 
+     * 事件类型：CLICK(自己定义菜单点击事件) 
+     */  
+    public static final String EVENT_TYPE_CLICK = "CLICK";   
+	
+    /**
+     * 开发者ID-->应用ID
+     */
+    public static final String APPID = "wx39bef0f06d28cca8";  //"wxc268fc152fb04c16";
+    
+    /**
+     * 开发者ID-->应用密钥
+     */
+    public static final String APPSECRET = "5282954b8381536ad47e25ea5dfe25fe";//"b428a6487253be2a8342b1865cfddb12";
+    
+    /**
+     * 接口调用请求: 获取access_token(access_token是公众号的全局唯一接口调用凭据，公众号调用各接口时都需使用access_token。)
+     */
+    public static final String ACCESS_TOKEN_URL = "https://api.weixin.qq.com/cgi-bin/token?grant_type=client_credential&appid=APPID&secret=APPSECRET";
+    
+    /**
+     * 接口调用请求: 创建菜单
+     */
+    public static final String CREATE_MENU_URL = "https://api.weixin.qq.com/cgi-bin/menu/create?access_token=ACCESS_TOKEN";
+    
+    
+    
+}
